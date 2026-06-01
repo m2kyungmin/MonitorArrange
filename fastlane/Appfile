@@ -1,0 +1,4 @@
+# 개인 정보(Apple ID·Team ID)는 커밋하지 않는다 — 환경변수로 주입한다.
+app_identifier("com.kyungmin.MonitorArrange")
+apple_id(ENV["APPLE_ID"]) if ENV["APPLE_ID"]
+team_id(ENV["DEVELOPMENT_TEAM"]) if ENV["DEVELOPMENT_TEAM"]

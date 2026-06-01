@@ -26,3 +26,13 @@ Package.resolved
 .DS_Store
 *.swp
 *~
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/
+vendor/bundle/
+
+# secrets (배포 자격증명은 절대 커밋하지 않는다)
+.env
+*.p8

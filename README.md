@@ -65,6 +65,28 @@ cp -R ~/Library/Developer/Xcode/DerivedData/MonitorArrange-*/Build/Products/Rele
 
 메뉴바의 🖥️ 아이콘을 클릭하면 현재 배치 확인 및 수동 전환이 가능합니다.
 
+## 배포 (DMG / 공증)
+
+[fastlane](https://fastlane.tools)로 자동화되어 있습니다 (`fastlane/Fastfile`). 자격증명·팀 ID 등 개인 정보는 모두 환경변수로 주입하며 커밋되지 않습니다.
+
+```bash
+brew install fastlane   # 또는 bundle install
+
+# 1) 공유용 DMG — 지금 바로 사용 가능 (공증 X)
+DEVELOPMENT_TEAM=<YOUR_TEAM_ID> fastlane mac dmg
+# → build/MonitorArrange.dmg  (받는 사람은 처음 열 때 우클릭 → 열기)
+
+# 2) 정식 배포 — Developer ID 서명 + 공증 + staple (유료 Apple Developer Program 필요)
+export CODE_SIGN_IDENTITY="Developer ID Application: NAME (TEAMID)"
+export DEVELOPMENT_TEAM=<YOUR_TEAM_ID>
+export APPLE_ID="you@example.com"
+export FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+fastlane mac release
+# → 공증·staple된 build/MonitorArrange.dmg (어디서나 더블클릭 실행)
+```
+
+> 공증에는 **Developer ID Application** 인증서(유료 멤버십)와 notarytool 자격증명(Apple ID + 앱 암호, 또는 App Store Connect API key `ASC_KEY_PATH`)이 필요합니다.
+
 ## 프로젝트 구조
 
 ```

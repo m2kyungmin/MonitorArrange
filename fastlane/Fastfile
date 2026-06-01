@@ -1,0 +1,111 @@
+# MonitorArrange — macOS 배포 자동화
+#
+# 레인
+#   fastlane mac dmg      공유용 DMG (공증 X). 지금 바로 사용 가능.
+#   fastlane mac release  Developer ID 서명 + 공증 + staple + DMG (유료 Developer Program 필요).
+#
+# 개인 정보(팀 ID·Apple ID·인증서·비밀번호)는 코드에 넣지 않고 모두 환경변수로 주입한다.
+
+default_platform(:mac)
+
+APP_NAME  = "MonitorArrange"
+SCHEME    = "MonitorArrange"
+PROJECT   = "MonitorArrange.xcodeproj"
+BUNDLE_ID = "com.kyungmin.MonitorArrange"
+
+REPO_DIR  = File.expand_path("..", __dir__)
+BUILD_DIR = File.join(REPO_DIR, "build")        # .gitignore됨
+DD_DIR    = File.join(BUILD_DIR, "DerivedData")
+APP_PATH  = File.join(BUILD_DIR, "#{APP_NAME}.app")
+DMG_PATH  = File.join(BUILD_DIR, "#{APP_NAME}.dmg")
+
+platform :mac do
+  desc "XcodeGen으로 Xcode 프로젝트 생성"
+  private_lane :xcodegen do
+    Dir.chdir(REPO_DIR) { sh("xcodegen", "generate") }
+  end
+
+  desc "Release .app 빌드 → build/MonitorArrange.app (서명은 ENV로 제어)"
+  private_lane :build_app do |options|
+    xcodegen
+    FileUtils.mkdir_p(BUILD_DIR)
+
+    settings = ["CODE_SIGN_STYLE=#{ENV['CODE_SIGN_STYLE'] || 'Automatic'}"]
+    settings << "DEVELOPMENT_TEAM=#{ENV['DEVELOPMENT_TEAM']}" if ENV["DEVELOPMENT_TEAM"]
+    settings << "CODE_SIGN_IDENTITY=#{ENV['CODE_SIGN_IDENTITY']}" if ENV["CODE_SIGN_IDENTITY"]
+    if options[:hardened]
+      # 공증 통과 조건: hardened runtime + secure timestamp
+      settings << "ENABLE_HARDENED_RUNTIME=YES"
+      settings << "OTHER_CODE_SIGN_FLAGS=--timestamp"
+    end
+
+    Dir.chdir(REPO_DIR) do
+      sh(
+        "xcodebuild",
+        "-project", PROJECT,
+        "-scheme", SCHEME,
+        "-configuration", "Release",
+        "-destination", "platform=macOS",
+        "-derivedDataPath", DD_DIR,
+        "-allowProvisioningUpdates",
+        *settings,
+        "clean", "build"
+      )
+    end
+
+    built = File.join(DD_DIR, "Build/Products/Release/#{APP_NAME}.app")
+    UI.user_error!("빌드 산출물을 찾지 못했습니다: #{built}") unless File.exist?(built)
+    FileUtils.rm_rf(APP_PATH)
+    FileUtils.cp_r(built, APP_PATH)
+    UI.success("빌드 완료: #{APP_PATH}")
+  end
+
+  desc "build/MonitorArrange.app → build/MonitorArrange.dmg"
+  private_lane :package_dmg do
+    UI.user_error!("먼저 .app을 빌드하세요") unless File.exist?(APP_PATH)
+    FileUtils.rm_f(DMG_PATH)
+    sh("hdiutil", "create", "-volname", APP_NAME,
+       "-srcfolder", APP_PATH, "-ov", "-format", "UDZO", DMG_PATH)
+    UI.success("DMG: #{DMG_PATH}")
+  end
+
+  # ---------------------------------------------------------------------------
+
+  desc "공유용 DMG (공증 X — 받는 사람은 우클릭→열기 필요). 지금 바로 사용 가능."
+  desc "사용 예: DEVELOPMENT_TEAM=<팀ID> fastlane mac dmg"
+  lane :dmg do
+    build_app(hardened: false)
+    package_dmg
+    UI.important("공증되지 않은 DMG입니다. 다른 Mac에서 처음 열 땐 우클릭→열기로 Gatekeeper를 통과하세요.")
+  end
+
+  desc "정식 배포: Developer ID 서명 + 공증 + staple + DMG (유료 Developer Program 필요)"
+  desc "필요 ENV:"
+  desc "  CODE_SIGN_IDENTITY='Developer ID Application: NAME (TEAMID)'"
+  desc "  DEVELOPMENT_TEAM=<팀ID>"
+  desc "  notarytool 자격증명 — APPLE_ID + FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD"
+  desc "  (또는 App Store Connect API key: ASC_KEY_PATH 지정)"
+  lane :release do
+    unless ENV["CODE_SIGN_IDENTITY"].to_s.include?("Developer ID")
+      UI.user_error!(
+        "Developer ID Application 인증서가 필요합니다. 유료 Apple Developer Program 가입 후 " \
+        "ENV CODE_SIGN_IDENTITY=\"Developer ID Application: ...\" 로 지정하세요."
+      )
+    end
+
+    build_app(hardened: true)
+    package_dmg
+
+    opts = { package: DMG_PATH, bundle_id: BUNDLE_ID, print_log: true, verbose: true }
+    if ENV["ASC_KEY_PATH"]
+      opts[:api_key_path] = ENV["ASC_KEY_PATH"]      # App Store Connect API key(JSON)
+    else
+      opts[:username] = ENV["APPLE_ID"]              # 비밀번호는 ENV FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD
+      opts[:asc_provider] = ENV["DEVELOPMENT_TEAM"]
+    end
+    notarize(opts)
+
+    sh("xcrun", "stapler", "staple", DMG_PATH)
+    UI.success("공증·staple 완료: #{DMG_PATH}")
+  end
+end
