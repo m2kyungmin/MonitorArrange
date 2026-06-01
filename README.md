@@ -4,6 +4,7 @@
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5-orange)
+[![Release](https://img.shields.io/github/v/release/m2kyungmin/MonitorArrange)](https://github.com/m2kyungmin/MonitorArrange/releases/latest)
 
 ## 작동 원리
 
@@ -25,6 +26,19 @@
 - **위치 변경 알림**
 
 ## 설치
+
+### 다운로드 (권장)
+
+[**Releases**](https://github.com/m2kyungmin/MonitorArrange/releases/latest)에서 `MonitorArrange.dmg`를 받으세요. Apple 공증(Notarized)된 빌드라 Gatekeeper 경고 없이 바로 실행됩니다.
+
+1. DMG를 열고 `MonitorArrange.app`을 **응용 프로그램** 폴더로 드래그
+2. 실행 후 **시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용**에서 허용 (마우스 감지에 필요)
+
+> macOS 14.0 이상 필요
+
+---
+
+아래는 **소스에서 직접 빌드**할 때만 필요합니다.
 
 ### 요구 사항
 
