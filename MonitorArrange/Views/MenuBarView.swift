@@ -1,5 +1,4 @@
 import SwiftUI
-import UserNotifications
 
 struct MenuBarView: View {
     @ObservedObject var appState: AppState
@@ -71,13 +70,7 @@ struct MenuBarView: View {
     }
 
     private func rearrange(to position: DisplayPosition) {
-        if displayManager.arrange(position: position) && showNotification {
-            let content = UNMutableNotificationContent()
-            content.title = "MonitorArrange"
-            content.body = "외장 모니터를 \(position.label)으로 이동했습니다"
-            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-            UNUserNotificationCenter.current().add(request)
-        }
+        appState.applyArrangement(position)
     }
 
     private func shortcut(for position: DisplayPosition) -> KeyboardShortcut {

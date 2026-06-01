@@ -15,6 +15,7 @@ final class EdgeDetector: ObservableObject {
     @Published var isRunning = false
 
     var onEdgeTriggered: ((DisplayPosition) -> Void)?
+    var onMouseMoved: ((CGPoint) -> Void)?
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -104,11 +105,13 @@ final class EdgeDetector: ObservableObject {
     }
 
     private func handleMouseEvent(_ event: CGEvent) {
+        let loc = event.location
+        onMouseMoved?(loc) // 커서 근접 표시용 — 쿨다운/감지 비활성과 무관하게 항상 전달
+
         guard isEnabled, Date() > cooldownUntil else { return }
         guard let builtin = DisplayManager.builtinDisplay(),
               DisplayManager.externalDisplay() != nil else { return }
 
-        let loc = event.location
         let deltaX = event.getIntegerValueField(.mouseEventDeltaX)
         let deltaY = event.getIntegerValueField(.mouseEventDeltaY)
         let b = builtin.bounds

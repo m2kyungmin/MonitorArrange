@@ -26,7 +26,10 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGN_STYLE: Manual
+        # Automatic 서명: 빌드하는 각 개발자의 Apple 계정/팀을 Xcode가 자동 선택한다.
+        # 팀 ID를 하드코딩하지 않아 이식 가능하며(다른 사용자도 자기 계정으로 빌드 가능),
+        # 개발 인증서로 서명되므로 designated requirement가 안정적 → 손쉬운 사용 권한이
+        # 재빌드 후에도 유지된다. (Apple 계정이 없으면 Xcode에서 "Sign to Run Locally"로 전환)
+        CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: MonitorArrange/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var edgeDetector: EdgeDetector
+    @ObservedObject var indicator: EdgeIndicatorController
     @AppStorage("showNotification") private var showNotification = true
     @AppStorage("launchAtLogin") private var launchAtLogin = false
 
@@ -18,6 +19,47 @@ struct SettingsView: View {
                         .frame(width: 40)
                 }
                 Text("화면 가장자리에서 마우스를 밀어야 하는 시간")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("가장자리 표시") {
+                Toggle("위치 변경 시 깜빡임", isOn: $indicator.flashOnChange)
+                Toggle("커서가 가까이 가면 표시", isOn: $indicator.cursorApproach)
+                Toggle("항상 표시", isOn: $indicator.alwaysOn)
+                Toggle("외장 모니터에도 표시", isOn: $indicator.mirrorOnExternal)
+
+                ColorPicker("색상", selection: $indicator.glowColor, supportsOpacity: false)
+
+                HStack {
+                    Text("투명도")
+                    Slider(
+                        value: Binding(
+                            get: { 1 - indicator.intensity },
+                            set: { indicator.intensity = 1 - $0 }
+                        ),
+                        in: 0...0.9, step: 0.05
+                    )
+                    Text("\(Int((1 - indicator.intensity) * 100))%")
+                        .monospacedDigit()
+                        .frame(width: 44)
+                }
+
+                HStack {
+                    Text("표시 테스트")
+                    Spacer()
+                    ForEach(DisplayPosition.allCases, id: \.self) { p in
+                        Button {
+                            indicator.preview(p)
+                        } label: {
+                            Image(systemName: p.icon)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("\(p.label) 가장자리 표시 미리보기")
+                    }
+                }
+
+                Text("커서 근접 표시는 자동 엣지 감지(손쉬운 사용 권한)가 켜져 있어야 동작합니다.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -78,7 +120,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 420)
+        .frame(width: 400, height: 580)
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {

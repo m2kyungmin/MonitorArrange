@@ -18,6 +18,8 @@
 - **자동 엣지 감지** — 화면 가장자리에서 마우스를 밀면 외장 모니터 배치 자동 변경 (상/하/좌/우)
 - **수동 전환** — 메뉴바에서 클릭으로 즉시 변경
 - **되돌리기** — 오작동 시 이전 위치로 복원
+- **가장자리 표시(글로우)** — 외장 모니터가 붙어있는 방향을 맥북·외장 양쪽 맞닿는 가장자리에 은은하게 표시. 위치 변경 시 깜빡임 / 커서 근접 시 / 항상 표시 중 선택, 색상·투명도 조절 가능
+- **메뉴바 아이콘** — 현재 외장 모니터 위치를 방향 아이콘으로 표시
 - **감지 시간 조절** — 0.1초 ~ 2.0초 (기본 0.1초)
 - **로그인 시 자동 실행**
 - **위치 변경 알림**
@@ -43,9 +45,17 @@ xcodebuild -project MonitorArrange.xcodeproj -scheme MonitorArrange -configurati
 cp -R ~/Library/Developer/Xcode/DerivedData/MonitorArrange-*/Build/Products/Release/MonitorArrange.app /Applications/
 ```
 
+> **코드 서명** — 프로젝트는 automatic 서명을 사용합니다. Xcode로 열면 본인 Apple 계정/팀이 자동 선택되어 그대로 빌드됩니다. CLI로 빌드할 땐 본인 팀 ID를 넘기세요:
+> ```bash
+> xcodebuild ... -allowProvisioningUpdates DEVELOPMENT_TEAM=<YOUR_TEAM_ID> build
+> ```
+> Apple 계정이 없으면 Xcode의 Signing & Capabilities에서 **"Sign to Run Locally"**(ad-hoc)로 바꿔 빌드할 수 있습니다. 단, ad-hoc은 재빌드 때마다 손쉬운 사용 권한을 다시 부여해야 합니다.
+>
+> 이 앱은 배포용 공증(notarization)이 되어 있지 않으므로, 다른 곳에서 받은 `.app`을 처음 열 땐 **우클릭 → 열기**로 Gatekeeper 경고를 통과해야 합니다.
+
 ### 권한 설정
 
-앱 실행 후 **시스템 설정 > 개인 정보 보호 및 보안 > 손쉬운 사용**에서 MonitorArrange를 허용해야 합니다. 마우스 이벤트를 감지하기 위해 필요합니다.
+앱 실행 후 **시스템 설정 > 개인 정보 보호 및 보안 > 손쉬운 사용**에서 MonitorArrange를 허용해야 합니다. 마우스 이벤트(엣지 감지·커서 근접 표시)를 감지하기 위해 필요합니다.
 
 ## 사용법
 
@@ -63,9 +73,10 @@ MonitorArrange/
 │   ├── MonitorArrangeApp.swift   # 앱 진입점 (MenuBarExtra)
 │   └── AppState.swift            # 앱 상태 관리 및 이벤트 연결
 ├── Core/
-│   ├── DisplayManager.swift      # CoreGraphics 디스플레이 재배치
-│   ├── DisplayPosition.swift     # 위치 열거형 (상/하/좌/우)
-│   └── EdgeDetector.swift        # CGEventTap 기반 엣지 감지
+│   ├── DisplayManager.swift          # CoreGraphics 디스플레이 재배치
+│   ├── DisplayPosition.swift         # 위치 열거형 (상/하/좌/우)
+│   ├── EdgeDetector.swift            # CGEventTap 기반 엣지 감지
+│   └── EdgeIndicatorController.swift # 가장자리 글로우 오버레이(맥북·외장)
 ├── Views/
 │   ├── MenuBarView.swift         # 메뉴바 드롭다운 UI
 │   └── SettingsView.swift        # 설정 창
