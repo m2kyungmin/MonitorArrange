@@ -77,15 +77,16 @@ DEVELOPMENT_TEAM=<YOUR_TEAM_ID> fastlane mac dmg
 # → build/MonitorArrange.dmg  (받는 사람은 처음 열 때 우클릭 → 열기)
 
 # 2) 정식 배포 — Developer ID 서명 + 공증 + staple (유료 Apple Developer Program 필요)
-export CODE_SIGN_IDENTITY="Developer ID Application: NAME (TEAMID)"
-export DEVELOPMENT_TEAM=<YOUR_TEAM_ID>
-export APPLE_ID="you@example.com"
-export FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
-fastlane mac release
+#  a. fastlane/.env.release.example → fastlane/.env.release 로 복사 후 값 채우기 (gitignore됨)
+cp fastlane/.env.release.example fastlane/.env.release && open -e fastlane/.env.release
+#  b. 공증 자격증명을 keychain에 1회 저장
+fastlane mac setup_notary --env release
+#  c. 빌드 → 공증 → staple
+fastlane mac release --env release
 # → 공증·staple된 build/MonitorArrange.dmg (어디서나 더블클릭 실행)
 ```
 
-> 공증에는 **Developer ID Application** 인증서(유료 멤버십)와 notarytool 자격증명(Apple ID + 앱 암호, 또는 App Store Connect API key `ASC_KEY_PATH`)이 필요합니다.
+> 공증에는 **Developer ID Application** 인증서(Xcode → Settings → Apple Accounts → 팀 선택 → Manage Certificates에서 발급)와 notarytool 자격증명(Apple ID + 앱 암호)이 필요합니다. `fastlane/.env.release`·`*.p8` 등 비밀 파일은 `.gitignore`로 커밋되지 않습니다.
 
 ## 프로젝트 구조
 

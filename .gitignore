@@ -35,4 +35,6 @@ vendor/bundle/
 
 # secrets (배포 자격증명은 절대 커밋하지 않는다)
 .env
+.env.release
+fastlane/.env.release
 *.p8

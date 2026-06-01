@@ -43,6 +43,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
   (또는 App Store Connect API key: ASC_KEY_PATH 지정)
 
+### mac setup_notary
+
+```sh
+[bundle exec] fastlane mac setup_notary
+```
+
+공증 자격증명을 keychain profile로 1회 저장 (.env.release의 APPLE_ID/앱암호/팀 사용)
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

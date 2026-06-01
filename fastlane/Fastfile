@@ -34,9 +34,11 @@ platform :mac do
     settings << "DEVELOPMENT_TEAM=#{ENV['DEVELOPMENT_TEAM']}" if ENV["DEVELOPMENT_TEAM"]
     settings << "CODE_SIGN_IDENTITY=#{ENV['CODE_SIGN_IDENTITY']}" if ENV["CODE_SIGN_IDENTITY"]
     if options[:hardened]
-      # 공증 통과 조건: hardened runtime + secure timestamp
+      # 공증 통과 조건: hardened runtime + secure timestamp.
+      # 그리고 get-task-allow(디버그 권한) 주입 금지 — 안 막으면 notary가 거부한다.
       settings << "ENABLE_HARDENED_RUNTIME=YES"
       settings << "OTHER_CODE_SIGN_FLAGS=--timestamp"
+      settings << "CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO"
     end
 
     Dir.chdir(REPO_DIR) do
@@ -96,16 +98,23 @@ platform :mac do
     build_app(hardened: true)
     package_dmg
 
-    opts = { package: DMG_PATH, bundle_id: BUNDLE_ID, print_log: true, verbose: true }
-    if ENV["ASC_KEY_PATH"]
-      opts[:api_key_path] = ENV["ASC_KEY_PATH"]      # App Store Connect API key(JSON)
-    else
-      opts[:username] = ENV["APPLE_ID"]              # 비밀번호는 ENV FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD
-      opts[:asc_provider] = ENV["DEVELOPMENT_TEAM"]
-    end
-    notarize(opts)
-
+    # 공증 — notarytool 직접 호출(keychain profile 사용). fastlane notarize 액션은 최신
+    # notarytool 출력과 JSON 파싱 충돌이 있어 우회한다. 프로필은 `fastlane mac setup_notary`로 1회 저장.
+    profile = ENV["NOTARY_PROFILE"] || "MonitorArrangeNotary"
+    UI.message("notarytool 제출 중 (Apple 서버 처리에 수 분 소요)…")
+    sh("xcrun", "notarytool", "submit", DMG_PATH, "--keychain-profile", profile, "--wait")
     sh("xcrun", "stapler", "staple", DMG_PATH)
     UI.success("공증·staple 완료: #{DMG_PATH}")
+  end
+
+  desc "공증 자격증명을 keychain profile로 1회 저장 (.env.release의 APPLE_ID/앱암호/팀 사용)"
+  lane :setup_notary do
+    profile = ENV["NOTARY_PROFILE"] || "MonitorArrangeNotary"
+    sh("xcrun", "notarytool", "store-credentials", profile,
+       "--apple-id", ENV["APPLE_ID"],
+       "--password", ENV["FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD"],
+       "--team-id", ENV["DEVELOPMENT_TEAM"],
+       log: false)
+    UI.success("notary keychain profile 저장됨: #{profile}")
   end
 end
